@@ -29,9 +29,9 @@ module Qswarm
 
       self.instance_exec(&@block)
     rescue JSON::ParserError
-      error = "[#{@agent.name}@#{$fqdn}] JSON::ParserError on #{payload.inspect}"
+      error = "JSON::ParserError on #{payload.inspect}"
       logger.error error
-      publish :errors, :text, 'nomad.errors', error
+      publish :errors, :text, "errors.#{@agent.name}.#{$fqdn}", error
     end
 
     def log(msg)

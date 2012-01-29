@@ -3,14 +3,10 @@ require 'eventmachine'
 
 require 'qswarm/agent'
 require 'qswarm/broker'
-require 'qswarm/dsl'
 
 module Qswarm
   class Swarm
     include Qswarm::Loggable
-    extend Qswarm::DSL
-
-    dsl_accessor :errors_queue
 
     def self.load(config)
       dsl = new
