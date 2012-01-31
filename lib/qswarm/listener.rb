@@ -10,7 +10,7 @@ module Qswarm
     include Qswarm::Loggable
     extend Qswarm::DSL
 
-    dsl_accessor :name, :broker, :format, :speaker
+    dsl_accessor :name, :broker, :format
     attr_reader :agent
 
     def initialize(agent, name, args, &block)
@@ -23,6 +23,8 @@ module Qswarm
 
       @queue_args     = { :auto_delete => true, :durable => true, :exclusive => true }
       @subscribe_args = { :exclusive => false, :ack => false }
+
+      @speaker = args.delete :speaker unless args.nil?
 
       # @subscribe_args.merge! args.delete(:subscribe) unless args.nil?
       @queue_args.merge! args unless args.nil?

@@ -24,9 +24,9 @@ module Qswarm
       logger
     end
 
-    def agent(name, &block)
+    def agent(name, args = nil, &block)
       logger.info "Registering agent: #{name}"
-      @agents << Qswarm::Agent.new(self, name, &block)
+      @agents << Qswarm::Agent.new(self, name, args, &block)
     end
 
     def broker(name, &block)
