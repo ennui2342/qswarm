@@ -3,13 +3,14 @@ require 'eventmachine'
 
 require 'qswarm/dsl'
 require 'qswarm/speaker'
+require 'qswarm/speakers/irc'
 
 module Qswarm
   class Listener
     include Qswarm::Loggable
     extend Qswarm::DSL
 
-    dsl_accessor :name, :broker, :format
+    dsl_accessor :name, :broker, :format, :speaker
     attr_reader :agent
 
     def initialize(agent, name, args, &block)
@@ -18,6 +19,7 @@ module Qswarm
       @speakers = []
       @sinks    = []
       @format   = :json
+      @instances = nil
 
       @queue_args     = { :auto_delete => true, :durable => true, :exclusive => true }
       @subscribe_args = { :exclusive => false, :ack => false }
@@ -34,6 +36,7 @@ module Qswarm
       logger.info "Binding listener #{@name} < #{routing_key}"
     end
 
+    # Not sure about this
     def subscribe(*options)
       Array[*options].each { |o| @subscribe_args[o] = true }
     end
@@ -42,12 +45,21 @@ module Qswarm
       @subscribe_args[:ack]
     end
 
-    def swarm(instances = 1)
+    def swarm(instances = nil)
+      @instances = instances
+    end
+   
+    # Should this be subscribe options?
+    def uniq
       @uuid = '-' + UUID.generate
     end
 
     def speak(name = nil, &block)
-      @speakers << Qswarm::Speaker.new(self, name, &block)
+      if @speaker
+        @speakers << eval("Qswarm::Speakers::#{@speaker}").new(self, name, &block)
+      else
+        @speakers << Qswarm::Speaker.new(self, name, &block)
+      end
       logger.info "Registering speaker: #{name} < #{@name}"
     end
 
@@ -57,9 +69,13 @@ module Qswarm
     end
 
     def run
+      # Any setup that needs to be done
+      @speakers.map { |s| s.run }
+      
       @bind ||= @name
       logger.info "Listening on #{@name} < #{@bind}"
 
+      get_broker.channel(@name, @bind).prefetch(@instances) unless @instances.nil?
       get_broker.queue(@name + @uuid ||= '', @bind, @queue_args).subscribe(@subscribe_args) do |metadata, payload|
         logger.debug "[#{@agent.name}] Received '#{payload.inspect}' on listener #{@name}/#{metadata.routing_key}"
 

@@ -47,6 +47,9 @@ module Qswarm
     def get_broker(name)
       @listener.get_broker(name)
     end
+    
+    def run
+    end
 
     private
 

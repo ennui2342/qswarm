@@ -8,5 +8,5 @@ usage = "#{$0} <configuration file>"
 abort usage unless config = ARGV.shift
 
 swarm = Qswarm::Swarm.load config
-swarm.log.level = Logger::INFO
+swarm.log.level = Logger::DEBUG
 swarm.run

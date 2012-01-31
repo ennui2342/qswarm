@@ -9,7 +9,7 @@ module Qswarm
     include Qswarm::Loggable
     extend Qswarm::DSL
 
-    dsl_accessor :name, :host, :port, :user, :pass, :vhost, :exchange_type, :exchange_name, :durable, :prefetch
+    dsl_accessor :name, :host, :port, :user, :pass, :vhost, :exchange_type, :exchange_name, :durable
     @@connection = {}
 
     def initialize(name, &block)
@@ -58,7 +58,7 @@ module Qswarm
     def channel name, routing_key = ''
       @channels["#{name}/#{routing_key}"] ||= begin
         logger.debug "Opening channel for #{name}/#{routing_key}"
-        @channels["#{name}/#{routing_key}"] = AMQP::Channel.new(connection, :prefetch => @prefetch)
+        @channels["#{name}/#{routing_key}"] = AMQP::Channel.new(connection)
       end
     end
 
