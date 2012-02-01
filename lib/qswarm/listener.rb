@@ -3,7 +3,6 @@ require 'eventmachine'
 
 require 'qswarm/dsl'
 require 'qswarm/speaker'
-require 'qswarm/speakers/irc'
 
 module Qswarm
   class Listener
@@ -58,7 +57,8 @@ module Qswarm
 
     def speak(name = nil, &block)
       if @speaker
-        @speakers << eval("Qswarm::Speakers::#{@speaker}").new(self, name, &block)
+        require "qswarm/speakers/#{@speaker.downcase}"
+        @speakers << eval("Qswarm::Speakers::#{@speaker.capitalize}").new(self, name, &block)
       else
         @speakers << Qswarm::Speaker.new(self, name, &block)
       end
