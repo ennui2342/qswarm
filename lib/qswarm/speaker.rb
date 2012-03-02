@@ -27,7 +27,7 @@ module Qswarm
         @heard = payload
       end
 
-      self.instance_exec(&@block)
+      self.instance_eval(&@block)
     rescue JSON::ParserError
       error = "JSON::ParserError on #{payload.inspect}"
       logger.error error

@@ -55,10 +55,10 @@ module Qswarm
       @uuid = '-' + UUID.generate
     end
 
-    def speak(name = nil, &block)
-      if @speaker
-        require "qswarm/speakers/#{@speaker.downcase}"
-        @speakers << eval("Qswarm::Speakers::#{@speaker.capitalize}").new(self, name, &block)
+    def speak(name, args = nil, &block)
+      if !args.nil?
+        require "qswarm/speakers/#{args[:type].downcase}"
+        @speakers << eval("Qswarm::Speakers::#{args[:type].capitalize}").new(self, name, &block)
       else
         @speakers << Qswarm::Speaker.new(self, name, &block)
       end
