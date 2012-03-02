@@ -30,7 +30,11 @@ module Qswarm
         
         case format
         when :get
-          http = EventMachine::HttpRequest.new(@uri).get :query => msg
+          if msg.is_a? Hash
+            http = EventMachine::HttpRequest.new(@uri).get :query => msg
+          else
+            http = EventMachine::HttpRequest.new(URI.join(@uri.to_s, msg)).get
+          end
           http.errback do |err|
             logger.error "Error sending #{msg} to #{@name}: #{err}"
           end
