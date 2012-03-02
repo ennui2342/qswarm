@@ -26,7 +26,7 @@ module Qswarm
           logger.debug "Connecting to host #{@server} service #{@service}"
           @@connections[@server] = EventMachine::connect @host, @port do |connection|
             def connection.receive_data(data)
-              logger.info "Received #{data} from #{@name}"
+              puts "Received #{data} from #{@name}"
             end
           end
         end
