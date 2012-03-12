@@ -95,6 +95,11 @@ module Qswarm
             logger.error "Lost AMQP TCP connection to #{settings[:host]}:#{settings[:port]}#{settings[:vhost]}, reconnecting in 10s"
             connection.reconnect(false, 10)
           end
+          # Force reconnect on heartbeat loss to cope with our funny firewall issues
+          @@connection["#{@host}:#{@port}#{@vhost}"].on_skipped_heartbeats do |connection, settings|
+            logger.error "Skipped heartbeats detected, reconnecting in 10s"
+            connection.reconnect(false, 10)
+          end
           # @@connection["#{@host}:#{@port}#{@vhost}"].on_connection_interruption do |connection|
           #   logger.error "Connection detected connection interruption"
           # end

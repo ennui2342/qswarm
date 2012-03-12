@@ -1,4 +1,5 @@
 require 'logger'
+require 'gelf'
 
 module Qswarm
   module Loggable
@@ -7,7 +8,8 @@ module Qswarm
     end
 
     def self.logger
-      @logger ||= Logger.new(STDOUT)
+      # @logger ||= Logger.new(STDOUT)
+      @logger ||= GELF::Logger.new($graylog2_host, 12201, 'WAN', { :facility => $greylog2_facility })
     end
   end
 end
