@@ -7,8 +7,9 @@ require 'qswarm'
 usage = "#{$0} <configuration file>"
 abort usage unless config = ARGV.shift
 
-$greylog2_facility = config.split('.')[0]
-$greylog2_host = ARGV.shift || 'localhost'
+$graylog2_facility = config.split('.')[0]
+$graylog2_host = ARGV.shift || 'localhost'
+
 
 swarm = Qswarm::Swarm.load config
 swarm.log.level = Logger::DEBUG
