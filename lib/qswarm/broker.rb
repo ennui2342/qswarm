@@ -90,7 +90,7 @@ module Qswarm
           @@connection["#{@host}:#{@port}#{@vhost}"].on_recovery do |connection|
             logger.debug "Recovered from AMQP network failure"
           end
-          @@connection["#{@host}:#{@port}#{@vhost}"].on_tcp_connection_loss do |connection, settings|
+          @@connection["#{@host}:#{@port}#{@vhost}"].on_connection_interruption do |connection, settings|
             # reconnect in 10 seconds, without enforcement
             logger.error "Lost AMQP TCP connection to #{settings[:host]}:#{settings[:port]}#{settings[:vhost]}, reconnecting in 10s"
             connection.reconnect(false, 10)
