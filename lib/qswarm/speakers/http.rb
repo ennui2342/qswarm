@@ -6,7 +6,7 @@ module Qswarm
     class Http < Qswarm::Speaker
       @@connections = {}
 
-      def initialize(listener, name, &block)
+      def initialize(listener, name, args, &block)
         @uri = URI.parse(name)
         @uri.host = 'localhost' if @uri.host.nil?
         super
@@ -17,29 +17,39 @@ module Qswarm
       end
 
       def run
-        connect
       end
 
       private
-
-      def connect
+      
+      def auth?
+        
       end
 
       def publish(format, msg)
         logger.debug "Sending '#{msg}' to #{@name}"
+        head = @args.user.nil? ? {} : { 'authorization' => [@args.user, @args.password] }
         
         case format
         when :get
           if msg.is_a? Hash
-            http = EventMachine::HttpRequest.new(@uri).get :query => msg
+            http = EventMachine::HttpRequest.new(@uri).get :head => head, :query => msg
           else
-            http = EventMachine::HttpRequest.new(URI.join(@uri.to_s, msg)).get
+            http = EventMachine::HttpRequest.new(URI.join(@uri.to_s, msg)).get :head => head
           end
           http.errback do |err|
             logger.error "Error sending #{msg} to #{@name}: #{err}"
           end
           http.callback do 
-            logger.debug "#{http.response_header.status} #{http.response}"
+            logger.debug "#{@name} #{http.response_header.status} #{http.response}"
+          end
+        
+        when :post
+          http = EventMachine::HttpRequest.new(@uri).post :head => head, :body => msg
+          http.errback do |err|
+            logger.error "Error sending #{msg} to #{@name}: #{err}"
+          end
+          http.callback do 
+            logger.debug "#{@name} #{http.response_header.status} #{http.response}"
           end
         end
       end

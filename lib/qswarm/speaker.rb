@@ -1,4 +1,5 @@
 require 'json'
+require 'ostruct'
 
 require 'qswarm/dsl'
 
@@ -10,12 +11,12 @@ module Qswarm
     dsl_accessor :broker
     attr_reader :agent, :metadata, :heard, :name
 
-    def initialize(listener, name, &block)
+    def initialize(listener, name, args, &block)
       @listener = listener
       @agent    = @listener.agent
       @name     = name.to_s unless name.nil?
       @block    = block
-
+      @args     = OpenStruct.new args
     end
 
     def parse(metadata, payload)
@@ -49,6 +50,10 @@ module Qswarm
     end
     
     def run
+    end
+    
+    def arg(name)
+      @args[name]
     end
 
     private

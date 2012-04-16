@@ -56,11 +56,11 @@ module Qswarm
     end
 
     def speak(name, args = nil, &block)
-      if !args.nil?
+      if !args[:type].nil?
         require "qswarm/speakers/#{args[:type].downcase}"
-        @speakers << eval("Qswarm::Speakers::#{args[:type].capitalize}").new(self, name, &block)
+        @speakers << eval("Qswarm::Speakers::#{args[:type].capitalize}").new(self, name, args, &block)
       else
-        @speakers << Qswarm::Speaker.new(self, name, &block)
+        @speakers << Qswarm::Speaker.new(self, name, args, &block)
       end
       logger.info "Registering speaker: #{name} < #{@name}"
     end
