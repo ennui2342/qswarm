@@ -40,7 +40,9 @@ module Qswarm
             logger.error "Error sending #{msg} to #{@name}: #{err}"
           end
           http.callback do 
-            logger.debug "#{@name} #{http.response_header.status} #{http.response}"
+            if @args.expect != http.response_header.status
+              logger.error "#{@uri.to_s} Unexpected response code: #{http.response_header.status} #{http.response}"
+            end
           end
         
         when :post
@@ -49,7 +51,9 @@ module Qswarm
             logger.error "Error sending #{msg} to #{@name}: #{err}"
           end
           http.callback do 
-            logger.debug "#{@name} #{http.response_header.status} #{http.response}"
+            if @args.expect != http.response_header.status
+              logger.error "#{@uri.to_s} Unexpected response code: #{http.response_header.status} #{http.response}"
+            end
           end
         end
       end
