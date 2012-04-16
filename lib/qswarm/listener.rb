@@ -56,7 +56,7 @@ module Qswarm
     end
 
     def speak(name, args = nil, &block)
-      if !args[:type].nil?
+      if !args.nil? && !args[:type].nil?
         require "qswarm/speakers/#{args[:type].downcase}"
         @speakers << eval("Qswarm::Speakers::#{args[:type].capitalize}").new(self, name, args, &block)
       else
