@@ -40,7 +40,6 @@ module Qswarm
           @@irc_servers[irc_server]               = Cinch::Bot.new do
             on :channel do |m|
               if m.message =~ /^#{m.bot.nick}/
-                logger.debug "Received message: #{m.channel}/#{m.message}"
                 EM.defer do
                   m.bot.config.shared['speaker'].parse( OpenStruct.new( :routing_key => '__', :message => m, :channel => m.channel ), m.message )
                 end
