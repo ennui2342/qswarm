@@ -20,11 +20,6 @@ module Qswarm
         @name.match(/([^#]*)(#.+)/) { irc_connect $1.empty? ? 'localhost' : $1, $2 }
       end
             
-      def parse(m)
-       logger.debug "Received message: #{m.channel}/#{m.message}"
-       super( OpenStruct.new( :routing_key => '__', :message => m, :channel => m.channel ), m.message )
-      end
-
       def join(m)
         unless m.user.nick == m.bot.nick
           if @admin_host && Regexp.new(@admin_host).match(m.user.host)
@@ -45,8 +40,9 @@ module Qswarm
           @@irc_servers[irc_server]               = Cinch::Bot.new do
             on :channel do |m|
               if m.message =~ /^#{m.bot.nick}/
+                logger.debug "Received message: #{m.channel}/#{m.message}"
                 EM.defer do
-                  m.bot.config.shared['speaker'].parse(m)
+                  m.bot.config.shared['speaker'].parse( OpenStruct.new( :routing_key => '__', :message => m, :channel => m.channel ), m.message )
                 end
               end
             end
