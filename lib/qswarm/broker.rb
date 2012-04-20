@@ -54,7 +54,7 @@ module Qswarm
 
     def exchange(channel = nil)
       @exchange ||= begin
-        @exchange = AMQP::Exchange.new(channel ||= AMQP::Channel.new(connection), @exchange_type, @exchange_name, :durable => @durable, :auto_recovery => true) do |exchange|
+        @exchange = AMQP::Exchange.new(channel ||= AMQP::Channel.new(connection, :auto_recovery => true), @exchange_type, @exchange_name, :durable => @durable) do |exchange|
           logger.debug "Declared #{@exchange_type} exchange #{@vhost}/#{@exchange_name}"
           @exchange.on_return do |basic_return, metadata, payload|
             logger.error "#{payload} was returned! reply_code = #{basic_return.reply_code}, reply_text = #{basic_return.reply_text}"
