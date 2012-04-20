@@ -54,7 +54,7 @@ module Qswarm
 
     def exchange(channel = nil)
       @exchange ||= begin
-        @exchange = AMQP::Exchange.new(channel ||= AMQP::Channel.new(connection), @exchange_type, @exchange_name, :durable => @durable) do |exchange|
+        @exchange = AMQP::Exchange.new(channel ||= AMQP::Channel.new(connection), @exchange_type, @exchange_name, :durable => @durable, :auto_recovery => true) do |exchange|
           logger.debug "Declared #{@exchange_type} exchange #{@vhost}/#{@exchange_name}"
           @exchange.on_return do |basic_return, metadata, payload|
             logger.error "#{payload} was returned! reply_code = #{basic_return.reply_code}, reply_text = #{basic_return.reply_text}"
@@ -91,18 +91,14 @@ module Qswarm
             logger.debug "Recovered from AMQP network failure"
           end
           @@connection["#{@host}:#{@port}#{@vhost}"].on_connection_interruption do |connection|
-            # reconnect in 10 seconds, without enforcement
+            # reconnect in 10 seconds
             logger.error "AMQP connection interruption, reconnecting in 10s"
             connection.reconnect(false, 10)
           end
           # Force reconnect on heartbeat loss to cope with our funny firewall issues
           @@connection["#{@host}:#{@port}#{@vhost}"].on_skipped_heartbeats do |connection, settings|
-            logger.error "Skipped heartbeats detected, reconnecting in 10s"
-            connection.reconnect(false, 10)
+            logger.error "Skipped heartbeats detected"
           end
-          # @@connection["#{@host}:#{@port}#{@vhost}"].on_connection_interruption do |connection|
-          #   logger.error "Connection detected connection interruption"
-          # end
           @@connection["#{@host}:#{@port}#{@vhost}"].on_error do |connection, connection_close|
             logger.error "AMQP connection has been closed. Reply code = #{connection_close.reply_code}, reply text = #{connection_close.reply_text}"
             if connection_close.reply_code == 320
