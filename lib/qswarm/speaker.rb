@@ -17,6 +17,7 @@ module Qswarm
       @name     = name.to_s unless name.nil?
       @block    = block
       @args     = OpenStruct.new args
+      @bind     = nil
     end
 
     def parse(metadata, payload)
@@ -32,7 +33,7 @@ module Qswarm
     rescue JSON::ParserError
       error = "JSON::ParserError on #{payload.inspect}"
       logger.error error
-      publish :errors, :text, "errors.#{@agent.name}.#{$fqdn}", error
+#      publish :errors, :text, "errors.#{@agent.name}.#{$fqdn}", error
     end
 
     def log(msg)
@@ -40,8 +41,9 @@ module Qswarm
     end
 
     def inject(format = :text, msg)
-      logger.debug "[#{@agent.name}] Sending '#{msg}' to broker #{get_broker(@broker).name}/#{@name}"
-      publish @broker, format, @name, msg
+      routing_key = @bind || @name
+      logger.debug "[#{@agent.name}] Sending '#{msg}' to broker #{get_broker(@broker).name}/#{routing_key}"
+      publish @broker, format, routing_key, msg
       log msg if format == :text
     end
 
@@ -56,6 +58,10 @@ module Qswarm
       @args[name]
     end
 
+    def bind(routing_key)
+      @bind = routing_key
+    end
+    
     private
 
     def publish(broker_name, format, routing_key, msg)
