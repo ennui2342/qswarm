@@ -36,8 +36,8 @@ module Qswarm
           else
             http = EventMachine::HttpRequest.new(URI.join(@uri.to_s, msg)).get :head => head
           end
-          http.errback do |err|
-            logger.error "Error sending #{msg} to #{@name}: #{err}"
+          http.errback do
+            logger.error "Error sending #{msg} to #{@name}: #{http.error}/#{http.response}"
           end
           http.callback do 
             if @args.expect != http.response_header.status
