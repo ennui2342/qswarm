@@ -32,9 +32,11 @@ module Qswarm
         case format
         when :get
           if msg.is_a? Hash
-            http = EventMachine::HttpRequest.new(@uri).get :head => head, :query => msg
+            connection = EventMachine::HttpRequest.new(@uri)
+            http = connection.get :head => head, :query => msg
           else
-            http = EventMachine::HttpRequest.new(URI.join(@uri.to_s, msg)).get :head => head
+            connection = EventMachine::HttpRequest.new(URI.join(@uri.to_s, msg))
+            http = connection.get :head => head
           end
           http.errback do
             logger.error "Error sending #{msg} to #{@name}: #{http.error}/#{http.response_header.status} #{http.response}"
@@ -43,11 +45,12 @@ module Qswarm
             if @args.expect != http.response_header.status
               logger.error "#{@uri.to_s} Unexpected response code: #{http.response_header.status} #{http.response}"
             end
-            http.close
+            connection.close
           end
         
         when :post
-          http = EventMachine::HttpRequest.new(@uri).post :head => head, :body => msg
+          connection = EventMachine::HttpRequest.new(@uri)
+          http = connection.post :head => head, :body => msg
           http.errback do
             logger.error "Error sending #{msg} to #{@name}: #{http.error}/#{http.response_header.status} #{http.response}"
           end
@@ -55,7 +58,7 @@ module Qswarm
             if @args.expect != http.response_header.status
               logger.error "#{@uri.to_s} Unexpected response code: #{http.response_header.status} #{http.response}"
             end
-            http.close
+            connection.close
           end
         end
       end
