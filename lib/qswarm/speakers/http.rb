@@ -37,12 +37,13 @@ module Qswarm
             http = EventMachine::HttpRequest.new(URI.join(@uri.to_s, msg)).get :head => head
           end
           http.errback do
-            logger.error "Error sending #{msg} to #{@name}: #{http.error}/#{http.response}"
+            logger.error "Error sending #{msg} to #{@name}: #{http.error}/#{http.response_header.status} #{http.response}"
           end
-          http.callback do 
+          http.callback do
             if @args.expect != http.response_header.status
               logger.error "#{@uri.to_s} Unexpected response code: #{http.response_header.status} #{http.response}"
             end
+            http.close
           end
         
         when :post
@@ -50,10 +51,11 @@ module Qswarm
           http.errback do
             logger.error "Error sending #{msg} to #{@name}: #{http.error}/#{http.response_header.status} #{http.response}"
           end
-          http.callback do 
+          http.callback do
             if @args.expect != http.response_header.status
               logger.error "#{@uri.to_s} Unexpected response code: #{http.response_header.status} #{http.response}"
             end
+            http.close
           end
         end
       end
