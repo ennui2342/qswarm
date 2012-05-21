@@ -45,7 +45,7 @@ module Qswarm
             if @args.expect != http.response_header.status
               logger.error "#{@uri.to_s} Unexpected response code: #{http.response_header.status} #{http.response}"
             end
-            connection.close
+            connection.close(nil)
           end
         
         when :post
@@ -58,7 +58,7 @@ module Qswarm
             if @args.expect != http.response_header.status
               logger.error "#{@uri.to_s} Unexpected response code: #{http.response_header.status} #{http.response}"
             end
-            connection.close
+            connection.close(nil)
           end
         end
       end
