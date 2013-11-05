@@ -1,41 +1,22 @@
 require 'andand'
 require 'eventmachine'
 
-require 'qswarm/agent'
-require 'qswarm/broker'
-
 module Qswarm
   class Swarm
-    include Qswarm::Loggable
+    include Qswarm::DSL
 
-    def self.load(config)
-      dsl = new
-      dsl.instance_eval(File.read(config), config)
-      dsl
-    end
+    dsl :agent
 
-    def initialize
+    def initialize(config)
       @agents = []
       $fqdn = Socket.gethostbyname(Socket.gethostname).first
-      @brokers = {}
-    end
 
-    def log
-      logger
+      dsl_load(config)
     end
 
     def agent(name, args = nil, &block)
-      logger.info "Registering agent: #{name}"
+      Qswarm.logger.info "Registering agent: #{name.inspect}"
       @agents << Qswarm::Agent.new(self, name, args, &block)
-    end
-
-    def broker(name, &block)
-      logger.info "Registering broker: #{name}"
-      @brokers[name] = Qswarm::Broker.new(name, &block)
-    end
-
-    def get_broker(name)
-      @brokers[name]
     end
 
     def run

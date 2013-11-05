@@ -1,0 +1,166 @@
+require 'amqp'
+require 'cgi'
+require 'uuid'
+require 'json'
+require 'ostruct'
+
+module Qswarm
+  module Clients
+    class Amqp < Qswarm::Client
+      include Qswarm::DSL
+
+#    dsl_accessor :name, :host, :port, :user, :pass, :vhost, :exchange_type, :exchange_name, :durable
+      @@connection = {}
+
+      def initialize(agent, name, args, &block)
+        # Set some defaults
+        @host          = 'localhost'
+        @port          = 5672
+        @user          = 'guest'
+        @pass          = 'guest'
+        @vhost         = ''
+        @durable       = true
+        @prefetch      = args[:prefetch] || 0
+
+        decode_uri(args[:uri]) if args[:uri]
+
+        @queues        = {}
+        @channels      = {}
+        @exchange      = nil
+        @instances     = nil
+
+        @queue_args     = { :auto_delete => true, :durable => true, :exclusive => true }.merge! args[:queue_args] || {}
+        @subscribe_args = { :exclusive => false, :ack => false }.merge! args[:subscribe_args] || {}
+        @bind_args      = args[:bind_args] || {}
+        @exchange_type  = args[:exchange_type] || :direct
+        @exchange_name  = args[:exchange_name] || ''
+        @exchange_args  = { :durable => true }.merge! args[:exchange_args] || {}
+        @uuid           = UUID.generate if args[:uniq]
+
+        Signal.trap("INT") do
+          @@connection["#{@host}:#{@port}/#{@vhost}"].close do
+            EM.stop { exit }
+          end
+        end
+
+        dsl_call(&block) if block_given?
+
+        super(agent, name, args)
+      end
+
+      def queue(name, routing_key = '', args = nil)
+        @queues["#{name}/#{routing_key}"] ||= begin
+          Qswarm.logger.debug "Binding queue #{name}/#{routing_key}"
+          @queues["#{name}/#{routing_key}"] = channel(name, routing_key).queue(name, args).bind(exchange(channel(name, routing_key)), @bind_args.merge(:routing_key => routing_key))
+        end
+      end
+
+      def exchange(channel = nil)
+        @exchange ||= begin
+          @exchange = AMQP::Exchange.new(channel ||= AMQP::Channel.new(connection, :auto_recovery => true), @exchange_type, @exchange_name, @exchange_args) do |exchange|
+            Qswarm.logger.debug "Declared #{@exchange_type} exchange #{@vhost}/#{@exchange_name}"
+            exchange.on_return do |basic_return, metadata, payload|
+              Qswarm.logger.error "#{payload} was returned! reply_code = #{basic_return.reply_code}, reply_text = #{basic_return.reply_text}"
+            end
+          end
+        end
+      end
+
+      # ruby-amqp currently limits to 1 consumer per queue (to be fixed in future) so can't pool channels
+      def channel(name, routing_key = '')
+        @channels["#{name}/#{routing_key}"] ||= begin
+          Qswarm.logger.debug "Opening channel for #{name}/#{routing_key}"
+          @channels["#{name}/#{routing_key}"] = AMQP::Channel.new(connection, AMQP::Channel.next_channel_id, :auto_recovery => true, :prefetch => @prefetch) do |c|
+            @channels["#{name}/#{routing_key}"].on_error do |channel, channel_close|
+              Qswarm.logger.error "[channel.close] Reply code = #{channel_close.reply_code}, reply text = #{channel_close.reply_text}"
+            end
+          end
+        end
+      end
+
+      def connection
+        # Pool connections at the class level
+        @@connection["#{@host}:#{@port}/#{@vhost}"] ||= begin
+          Qswarm.logger.debug "Connecting to AMQP broker #{self.to_s}"
+          @@connection["#{@host}:#{@port}/#{@vhost}"] = AMQP.connect(self.to_s, :heartbeat => 30, :on_tcp_connection_failure => Proc.new { |settings|
+              Qswarm.logger.error "AMQP initial connection failure to #{settings[:host]}:#{settings[:port]}/#{settings[:vhost]}"
+              EM.stop
+            }, :on_possible_authentication_failure => Proc.new { |settings|
+              Qswarm.logger.error "AMQP initial authentication failed for #{settings[:host]}:#{settings[:port]}/#{settings[:vhost]}"
+              EM.stop
+            }
+          ) do |c|
+            @@connection["#{@host}:#{@port}/#{@vhost}"].on_recovery do |connection|
+              Qswarm.logger.debug "Recovered from AMQP network failure"
+            end
+            @@connection["#{@host}:#{@port}/#{@vhost}"].on_tcp_connection_loss do |connection|
+              # reconnect in 10 seconds
+              Qswarm.logger.error "AMQP TCP connection lost, reconnecting in 2s"
+              connection.periodically_reconnect(2)
+            end
+            @@connection["#{@host}:#{@port}/#{@vhost}"].on_connection_interruption do |connection|
+              Qswarm.logger.error "AMQP connection interruption"
+            end
+            # Force reconnect on heartbeat loss to cope with our funny firewall issues
+            @@connection["#{@host}:#{@port}/#{@vhost}"].on_skipped_heartbeats do |connection, settings|
+              Qswarm.logger.error "Skipped heartbeats detected"
+            end
+            @@connection["#{@host}:#{@port}/#{@vhost}"].on_error do |connection, connection_close|
+              Qswarm.logger.error "AMQP connection has been closed. Reply code = #{connection_close.reply_code}, reply text = #{connection_close.reply_text}"
+              if connection_close.reply_code == 320
+                Qswarm.logger.error "Set a 30s reconnection timer"
+                # every 30 seconds
+                connection.periodically_reconnect(30)
+              end
+            end
+            Qswarm.logger.debug "Connected to AMQP broker #{self.to_s}"
+          end
+        end
+      end
+
+      def decode_uri(uri)
+        @user, @pass, @host, @port, @vhost = uri.match(/([^:]+):([^@]+)@([^:]+):([^\/]+)\/(.*)/).captures
+      end
+
+      def ack?
+        @args[:subscribe_args] ? @args[:subscribe_args][:ack] : false
+      end
+
+      def to_s
+        "amqp://#{@user}:#{@pass}@#{@host}:#{@port}/#{CGI.escape('/' + @vhost)}"
+      end
+
+      def status
+        "AMQP connection #{@name.inspect} at #{@args[:uri]}, bound to #{@args[:bind]}/#{@args[:bind_args]} on #{@args[:exchange_type].inspect} exchange #{@args[:exchange_name]}"
+      end
+
+      def run
+#        Qswarm.logger.info "Binding #{@name.inspect} < #{@args[:bind]}"
+#        channel(@name, @args[:bind]).prefetch(@args[:prefetch]) unless @args[:prefetch].nil?
+
+        queue(@agent.name.to_s + '.' +  @name.to_s + @uuid ||= '', @args[:bind], @queue_args).subscribe(@subscribe_args) do |metadata, payload|
+          emit metadata, payload
+        end
+      end
+
+      def emit(metadata, payload)
+        Qswarm.logger.info "[#{@agent.name.inspect}] :amqp connection #{@name.inspect} bound to #{metadata.routing_key}, received #{payload.inspect}"
+
+#        callback = proc do |agent|
+#          metadata.ack if ack?
+#        end
+
+#        EM.defer nil, callback do
+          @agent.emit(@name, :payload => OpenStruct.new(:raw => payload, :routing_key => metadata.routing_key, :headers => metadata.headers, :format => @args[:format]))
+          metadata.ack if ack?
+#          @agent
+#        end
+      end
+
+      def sink(args, payload)
+        Qswarm.logger.info "[#{@agent.name.inspect} #{@name.inspect}] Sinking #{payload.raw.inspect} to AMQP routing_key #{args[:routing_key].inspect}"
+          exchange.publish payload.raw, :routing_key => args[:routing_key]
+      end
+    end
+  end
+end
