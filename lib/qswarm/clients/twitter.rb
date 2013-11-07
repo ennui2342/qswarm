@@ -56,6 +56,10 @@ module Qswarm
                   emit(:raw => status.attrs, :type => :track, :topic => topic, :matches => matches, :text => status.text)
                 end
               end
+#            end.on_limit do |skip_count|
+#              Qswarm.logger.error "[#{@agent.name.inspect} #{@name.inspect}] There were #{skip_count} tweets missed because of rate limiting."
+            end.on_error do |message|
+              Qswarm.logger.error "[#{@agent.name.inspect} #{@name.inspect}] #{message}"
             end
           end
 
@@ -68,15 +72,19 @@ module Qswarm
                   emit(:raw => status.attrs, :type => :follow, :group => group, :user_id => status.user.id, :text => status.text)
                 end
               end
+#            end.on_limit do |skip_count|
+#              Qswarm.logger.error "[#{@agent.name.inspect} #{@name.inspect}] There were #{skip_count} tweets missed because of rate limiting."
+            end.on_error do |message|
+              Qswarm.logger.error "[#{@agent.name.inspect} #{@name.inspect}] #{message}"
             end
           end
-        end
 
         rescue TweetStream::ReconnectError
           Qswarm.logger.info "[#{@agent.name.inspect} #{@name.inspect}] Hit max reconnects, restarting tweetstream in 60 seconds ..."
           EM.timer(60, run)
         end
       end
+    end
   end
 end
 
