@@ -31,7 +31,6 @@ module Qswarm
     # @param args [Hash] arguments for the connection
     # @param &block [Proc] a block which is passed to the client constructor
     def connect(name, args = nil, &block)
-      raise "Connection '#{name.inspect}' is a reserved name" if %i[echo xmpp irc amqp].include? name
       raise "Connection '#{name.inspect}' is already registered" if @clients[name]
 
       if !args.nil? && !args[:type].nil?
@@ -47,42 +46,24 @@ module Qswarm
     def before(connection, *guards, &block)
       Qswarm.logger.info "[#{@name.inspect}] Registering :before filter for #{connection.inspect}/#{guards.inspect}"
 
-      case connection
-      when Symbol
-        register_filter :before, connection, *guards, &block
-
-      when Array
-        connection.each do |c|
-          register_filter :before, c, *guards, &block
-        end
+      [*connection].each do |c|
+        register_filter :before, c, *guards, &block
       end
     end
 
     def after(connection, *guards, &block)
       Qswarm.logger.info "[#{@name.inspect}] Registering :after filter for #{connection.inspect}/#{guards.inspect}"
 
-      case connection
-      when Symbol
-        register_filter :after, connection, *guards, &block
-
-      when Array
-        connection.each do |c|
-          register_filter :after, c, *guards, &block
-        end
+      [*connection].each do |c|
+        register_filter :after, c, *guards, &block
       end
     end
 
     def source(connection, *guards, &block)
       Qswarm.logger.info "[#{@name.inspect}] Registering handler for #{connection.inspect}/#{guards.inspect}"
 
-      case connection
-      when Symbol
-        register_handler connection, *guards, &block
-
-      when Array
-        connection.each do |c|
-          register_handler c, *guards, &block
-        end
+      [*connection].each do |c|
+        register_handler c, *guards, &block
       end
     end
 
@@ -104,14 +85,8 @@ module Qswarm
                 p.data
               end unless args.nil?
 
-      case connection
-      when Symbol
-        @clients[connection].sink(args, p)
-
-      when Array
-        connection.each do |c|
-          @clients[c].sink(args, p)
-        end
+      [*connection].each do |c|
+        @clients[c].sink(args, p)
       end
     end
 
@@ -132,18 +107,10 @@ module Qswarm
                        @payload.raw
                       end
 
-      case connection
-      when Symbol
-        run_filters :before, connection
-        call_handlers connection
-        run_filters :after, connection
-
-      when Array
-        connection.each do |c|
-          run_filters :before, c
-          call_handlers c
-          run_filters :after, c
-        end
+      [*connection].each do |c|
+        run_filters :before, c
+        call_handlers c
+        run_filters :after, c
       end
     end
 
