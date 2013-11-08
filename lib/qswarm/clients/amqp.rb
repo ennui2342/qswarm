@@ -138,8 +138,12 @@ module Qswarm
 #        Qswarm.logger.info "Binding #{@name.inspect} < #{@args[:bind]}"
 #        channel(@name, @args[:bind]).prefetch(@args[:prefetch]) unless @args[:prefetch].nil?
 
-        queue(@agent.name.to_s + '.' +  @name.to_s + @uuid ||= '', @args[:bind], @queue_args).subscribe(@subscribe_args) do |metadata, payload|
-          emit metadata, payload
+        if !@args[:bind].nil?
+          [*@args[:bind]].each do
+            queue(@agent.name.to_s + '.' +  @name.to_s + @uuid ||= '', @args[:bind], @queue_args).subscribe(@subscribe_args) do |metadata, payload|
+              emit metadata, payload
+            end
+          end
         end
       end
 
