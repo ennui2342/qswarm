@@ -139,8 +139,8 @@ module Qswarm
 #        channel(@name, @args[:bind]).prefetch(@args[:prefetch]) unless @args[:prefetch].nil?
 
         if !@args[:bind].nil?
-          [*@args[:bind]].each do
-            queue(@agent.name.to_s + '.' +  @name.to_s + @uuid ||= '', @args[:bind], @queue_args).subscribe(@subscribe_args) do |metadata, payload|
+          [*@args[:bind]].each do |bind|
+            queue(@agent.name.to_s + '.' +  @name.to_s + @uuid ||= '', bind, @queue_args).subscribe(@subscribe_args) do |metadata, payload|
               emit metadata, payload
             end
           end
@@ -155,15 +155,21 @@ module Qswarm
 #        end
 
 #        EM.defer nil, callback do
-          @agent.emit(@name, :payload => OpenStruct.new(:raw => payload, :routing_key => metadata.routing_key, :headers => metadata.headers, :format => @args[:format]))
+          @agent.emit(@name, :payload => OpenStruct.new(:raw => payload, :routing_key => metadata.routing_key, :headers => metadata.headers.nil? ? nil : Hash[metadata.headers.map{ |k, v| [k.to_sym, v] }], :format => @args[:format]))
           metadata.ack if ack?
 #          @agent
 #        end
       end
 
       def sink(args, payload)
-        Qswarm.logger.info "[#{@agent.name.inspect} #{@name.inspect}] Sinking #{payload.raw.inspect} to AMQP routing_key #{args[:routing_key].inspect}"
-          exchange.publish payload.raw, :routing_key => args[:routing_key]
+        [*args[:routing_key]].each do |routing_key|
+          Qswarm.logger.info "[#{@agent.name.inspect} #{@name.inspect}] Sinking #{payload.raw.inspect} to AMQP routing_key #{routing_key.inspect}"
+          if args[:headers]
+            exchange.publish payload.raw, :routing_key => routing_key, :headers => args[:headers]
+          else
+            exchange.publish payload.raw, :routing_key => routing_key
+          end
+        end
       end
     end
   end

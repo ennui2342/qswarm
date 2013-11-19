@@ -29,12 +29,12 @@ module Qswarm
       def sink(args, payload)
         if @connected
           # Use channel jid argument from write or from connection itself
-          channels = args.nil? || args[:channels].nil? ? @args[:channels] : args[:channels]
-          join channels;
+          channel = args.nil? || args[:channel].nil? ? @args[:channel] : args[:channel]
+          join channel;
 
-          channels.each do |channel|
-            Qswarm.logger.info "[#{@agent.name.inspect}|#{@name.inspect}] Sinking #{payload.raw.inspect} to XMPP channel #{channel.inspect}"
-            @connection.say channel, payload.raw, :groupchat
+          [*channel].each do |c|
+            Qswarm.logger.info "[#{@agent.name.inspect} #{@name.inspect}] Sinking #{payload.raw.inspect} to XMPP channel #{c.inspect}"
+            @connection.say c, payload.raw, :groupchat
           end
         else
           EventMachine::Timer.new(5,self.sink(args, payload))
@@ -42,21 +42,22 @@ module Qswarm
       end
 
       def run
-        xmpp_connect @args[:jid], @args[:password], @args[:channels]
+        xmpp_connect @args[:jid], @args[:password], @args[:channel]
       end
 
       private
 
-      def join(channels)
-        channels.each do |channel|
-          next if @channels.include? channel
-          Qswarm.logger.debug "Joining XMPP channel #{channel}"
-          @connection.join channel, 'Bob Bot'
-          @channels << channel
+      def join(channel)
+        [*channel].each do |c|
+          next if @channels.include? c
+          Qswarm.logger.debug "Joining XMPP channel #{c}"
+          # Need to do something about the name being hard coded here
+          @connection.join c, 'Bob Bot'
+          @channels << c
         end
       end
 
-      def xmpp_connect(jid, password, channels)
+      def xmpp_connect(jid, password, channel)
         Qswarm.logger.debug "Connecting to XMPP server #{jid}"
 
         s = QBlather.new
@@ -68,7 +69,7 @@ module Qswarm
           Qswarm.logger.debug "Connected to XMPP server #{jid}"
           @connected = true
           s.on_connect(@on_connect) if @on_connect
-          join channels if !channels.nil?
+          join channel unless channel.nil?
           # Hipchat has a 150s inactivity timer
           EventMachine::PeriodicTimer.new(60) { s << ' ' }
         end
@@ -85,7 +86,7 @@ module Qswarm
       end
 
       def status
-        "XMPP connected to #{@args[:jid]}, present in channels #{@channels.to_s}"
+        "XMPP connected to #{@args[:jid]}, present in channels #{@channel.to_s}"
       end
     end
   end

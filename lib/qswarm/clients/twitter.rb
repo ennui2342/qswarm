@@ -53,7 +53,7 @@ module Qswarm
 
                 if !matches.empty?
                   Qswarm.logger.info "[#{@agent.name.inspect} #{@name.inspect}] Sending :track/#{topic.inspect} #{status.user.screen_name} :: #{status.text} :: #{matches.to_s}"
-                  emit(:raw => status.attrs, :type => :track, :topic => topic, :matches => matches, :text => status.text)
+                  emit(:raw => status.attrs, :headers => { :type => :track, :topic => topic, :matches => matches })
                 end
               end
 #            end.on_limit do |skip_count|
@@ -69,7 +69,7 @@ module Qswarm
               @follow.each do |group, users|
                 if users.include?(status.user.id)
                   Qswarm.logger.info "[#{@agent.name.inspect} #{@name.inspect}] Sending :follow/#{group.inspect} #{status.user.screen_name} :: #{status.text}"
-                  emit(:raw => status.attrs, :type => :follow, :group => group, :user_id => status.user.id, :text => status.text)
+                  emit(:raw => status.attrs, :headers => { :type => :follow, :group => group, :user_id => status.user.id })
                 end
               end
 #            end.on_limit do |skip_count|

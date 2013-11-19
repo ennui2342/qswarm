@@ -12,6 +12,10 @@ module Qswarm
     def sink(args, payload)
     end
 
+    def format
+      @args[:format]
+    end
+
     def run
     end
   end

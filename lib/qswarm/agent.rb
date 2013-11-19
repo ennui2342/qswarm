@@ -7,7 +7,7 @@ module Qswarm
     include Qswarm::DSL
 
     attr_reader :swarm, :name
-    dsl :connect, :before, :after, :source, :sink, :emit, :payload
+    dsl :connect, :before, :after, :source, :sink, :emit, :agent, :payload
 
     def initialize(swarm, name, args = nil, &block)
       @swarm              = swarm
@@ -19,6 +19,10 @@ module Qswarm
       @payload            = nil
 
       dsl_call(&block)
+    end
+
+    def agent
+      self
     end
 
     def payload
@@ -75,17 +79,17 @@ module Qswarm
       p.data = args[:data] unless args.nil? || args[:data].nil?
       p.data = dsl_call(&block) if block_given?
 
-      # Update raw from the current data
-      p.raw = case args[:format]
-              when :json
-                JSON.generate(p.data)
-              when :xml
-                p.data.to_xml
-              else # raw
-                p.data
-              end unless args.nil?
-
       [*connection].each do |c|
+        # Update raw from the current data
+        p.raw = case args[:format].nil? ? @clients[c].format : args[:format]
+                when :json
+                  JSON.generate(p.data)
+                when :xml
+                  p.data.to_xml
+                else # raw
+                  p.data
+                end unless args.nil?
+
         @clients[c].sink(args, p)
       end
     end
@@ -100,7 +104,7 @@ module Qswarm
 
       @payload.data = case payload.format
                       when :json
-                        JSON.parse(@payload.raw)
+                        JSON.parse(@payload.raw, :symbolize_names => true)
                       when :xml
                         Nokogiri::XML(@payload.raw)
                       else # :raw
@@ -124,14 +128,14 @@ module Qswarm
       return if @filters[type].nil?
       @filters[type].each do |guards, client, block|
         next if client != connection
-        dsl_call(&block) unless guarded?(guards, @payload)
+        dsl_call(&block) unless guarded?(guards, OpenStruct.new(@payload.headers))
       end
     end
 
     def call_handlers(connection)
       return if !handlers = @handlers[connection]
       handlers.each do |guards, block|
-        if !guarded?(guards, @payload)
+        if !guarded?(guards, OpenStruct.new(@payload.headers))
           Qswarm.logger.debug "[#{@name.inspect}] Source #{connection.inspect} received #{@payload.inspect}"
           dsl_call(&block)
         end
