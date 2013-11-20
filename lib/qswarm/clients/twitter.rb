@@ -1,4 +1,5 @@
 require 'tweetstream'
+require 'twitter'
 require 'yajl'
 require 'json'
 require 'ostruct'
@@ -16,8 +17,16 @@ module Qswarm
           config.parser   = :yajl
         end
 
+        @rest_client = ::Twitter::Client.new(
+          :consumer_key => args[:consumer_key],
+          :consumer_secret => args[:consumer_secret],
+          :oauth_token => args[:oauth_token],
+          :oauth_token_secret => args[:oauth_token_secret]
+        )
+
         @track = args[:track]
         @follow = args[:follow]
+        @list = args[:list]
 
         super
       end
@@ -82,6 +91,28 @@ module Qswarm
         rescue TweetStream::ReconnectError
           Qswarm.logger.info "[#{@agent.name.inspect} #{@name.inspect}] Hit max reconnects, restarting tweetstream in 60 seconds ..."
           EM.timer(60, run)
+        end
+
+        if @list
+          timer = 30
+          since_id = {}
+
+          Qswarm.logger.info "[#{@agent.name.inspect} #{@name.inspect}] Tracking List: " + @list.to_s + " every #{timer} seconds"
+          @list.each do |user, slug|
+            @rest_client.list_timeline(user, slug).each do |status|
+              since_id["#{user}/#{slug}"] = status.attrs[:id] and break
+            end
+          end
+
+          EventMachine::PeriodicTimer.new(timer) do
+            @list.each do |user, slug|
+              @rest_client.list_timeline(user, slug, { :since_id => since_id["#{user}/#{slug}"] }).each do |status|
+                Qswarm.logger.info "[#{@agent.name.inspect} #{@name.inspect}] Sending :list/#{slug.inspect} #{status.attrs[:user][:screen_name]} :: #{status.text}"
+                emit(:raw => status.attrs, :headers => { :type => :list, :user_id => user, :slug => slug })
+                since_id["#{user}/#{slug}"] = status.attrs[:id]
+              end
+            end
+          end
         end
       end
     end
