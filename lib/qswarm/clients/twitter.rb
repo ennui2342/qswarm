@@ -106,10 +106,14 @@ module Qswarm
 
           EventMachine::PeriodicTimer.new(timer) do
             @list.each do |user, slug|
-              @rest_client.list_timeline(user, slug, { :since_id => since_id["#{user}/#{slug}"] }).each do |status|
-                Qswarm.logger.info "[#{@agent.name.inspect} #{@name.inspect}] Sending :list/#{slug.inspect} #{status.attrs[:user][:screen_name]} :: #{status.text}"
-                emit(:raw => status.attrs, :headers => { :type => :list, :user_id => user, :slug => slug })
-                since_id["#{user}/#{slug}"] = status.attrs[:id]
+              begin
+                @rest_client.list_timeline(user, slug, { :since_id => since_id["#{user}/#{slug}"] }).each do |status|
+                  Qswarm.logger.info "[#{@agent.name.inspect} #{@name.inspect}] Sending :list/#{slug.inspect} #{status.attrs[:user][:screen_name]} :: #{status.text}"
+                  emit(:raw => status.attrs, :headers => { :type => :list, :user_id => user, :slug => slug })
+                  since_id["#{user}/#{slug}"] = status.attrs[:id]
+                end
+              rescue Twitter::Error::ClientError
+                  Qswarm.logger.info "[#{@agent.name.inspect} #{@name.inspect}] Twitter REST API client error"
               end
             end
           end
