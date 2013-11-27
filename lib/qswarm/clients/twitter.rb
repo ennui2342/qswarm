@@ -112,7 +112,7 @@ module Qswarm
                   emit(:raw => status.attrs, :headers => { :type => :list, :user_id => user, :slug => slug })
                   since_id["#{user}/#{slug}"] = status.attrs[:id]
                 end
-              rescue Twitter::Error::ClientError
+              rescue ::Twitter::Error::ClientError
                   Qswarm.logger.info "[#{@agent.name.inspect} #{@name.inspect}] Twitter REST API client error"
               end
             end
