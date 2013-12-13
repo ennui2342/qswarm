@@ -8,8 +8,8 @@ Gem::Specification.new do |s|
   s.authors     = ["Mark Cheverton"]
   s.email       = ["mark.cheverton@ecafe.org"]
   s.homepage    = "http://github.com/ennui2342/qswarm"
-  s.summary     = %q{Distributed queue based agents in Ruby}
-  s.description = %q{Framework for writing distributed agents hanging off an AMQP message bus}
+  s.summary     = %q{Streaming event processing DSL for Ruby}
+  s.description = %q{Defines a DSL to allow stream processing from various sources for output to various sinks}
 
   s.rubyforge_project = "qswarm"
 
@@ -27,4 +27,7 @@ Gem::Specification.new do |s|
   s.add_dependency 'uuid'
   s.add_dependency 'json'
   s.add_dependency 'andand'
+  s.add_dependency 'nokogiri'
+  s.add_dependency 'tweetstream'
+  s.add_dependency 'twitter'
 end
