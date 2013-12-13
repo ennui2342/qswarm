@@ -164,8 +164,8 @@ module Qswarm
       def sink(args, payload)
         [*args[:routing_key]].each do |routing_key|
           Qswarm.logger.info "[#{@agent.name.inspect} #{@name.inspect}] Sinking #{payload.raw.inspect} to AMQP routing_key #{routing_key.inspect}"
-          if args[:headers]
-            exchange.publish payload.raw, :routing_key => routing_key, :headers => args[:headers]
+          if args[:headers] || payload.headers
+            exchange.publish payload.raw, :routing_key => routing_key, :headers => (args[:headers] ? args[:headers] : payload.headers)
           else
             exchange.publish payload.raw, :routing_key => routing_key
           end
