@@ -23,7 +23,17 @@ Alternatively you could save each agent in a separate file and use a process man
 ## Connections ##
 
 
-Use `connect` to setup connections to services. Currently [AMQP](#amqp), [XMPP](#xmpp), and [Twitter](#twitter) are supported. You can also pass an optional block which will be executed once the connection is set up.
+Use `connect` to setup connections to services. Currently [Logger](#logger), [AMQP](#amqp), [XMPP](#xmpp), and [Twitter](#twitter) are supported. You can also pass an optional block which will be executed once the connection is set up.
+
+### Logger ###
+
+```ruby
+  connect :mylog,
+          :type            => :logger,
+          :filename        => 'foo.log'
+```
+
+Logger is a very simple connection type which can be used to append a stream of messages to a file. It can only `sink` messages (i.e. doesn't not emit any data) and it provides no arguments to `sink`.
 
 ### AMQP ###
 
@@ -48,7 +58,7 @@ The agent is automatically subscribed to the created queue and you can pass `:su
 
 The `:format` argument determines what Qswarm does with the payloads it receives and how it transforms messages to be sent, see section [Payload](#payload).
 
-AMQP sets the following headers for `source` to use:
+AMQP sets the following headers for `source` to use as [guards](#filters-and-guards):
 
 * `:routing_key`
 * Any headers from a headers exchange will be passed verbatim
@@ -64,11 +74,12 @@ AMQP supports the following arguments to `sink`:
   connect :hipchat,
           :type            => :xmpp,
           :jid             => '54321_123456@chat.hipchat.com',
+          :real_name       => 'My bot',
           :channel         => ['54321_lounge@conf.hipchat.com', '54321_chat@conf.hipchat.com'],
           :password        => 'foobar'
 ```
 
-The above example connects to an XMPP service called `:hipchat` using the JID and password provided. The script will automatically join the groupchat channel(s) specified in `:channel` and will use these channels list for sinks which don't specify a channel destination. XMPP support is provided using the [Blather][] library, which means that you can include Blather DSL in connect's block to implement bot behaviours. This block will execute once the connection to the XMPP server has been established (when_ready).
+The above example connects to an XMPP service called `:hipchat` using the JID and password provided. The `:real_name` will be used when joining groupchat rooms and for some services (like Hipchat) needs to match exactly your registered name including case. The script will automatically join the groupchat channel(s) specified in `:channel` and will use these channels list for sinks which don't specify a channel destination. XMPP support is provided using the [Blather][] library, which means that you can include Blather DSL in connect's block to implement bot behaviours. This block will execute once the connection to the XMPP server has been established (when_ready).
 
 Currently there is no support to `source` messages from an XMPP connection (i.e. you can only talk not listen) so the Blather DSL is your only option if you want interactivity at the moment.
 
@@ -180,7 +191,7 @@ Sources listen to messages from connections and process them using their blocks 
   end
 ```
 
-The above will listen to messages from the `:tweetstream` connection. The [guards](#filters-and-guards) will eliminate any tweet which doesn't come from a `:follow` (rather than `:track` or `:list`) and where the user doesn't match the provided ID which happens to be the Highways Agency twitter account for East of England travel news. The pattern match for A14 news is done in the block because the tweet text isn't available in the headers.
+The above will listen to messages from the `:tweetstream` connection. The [guards](#filters-and-guards) will eliminate any tweet which doesn't come from a `:follow` (rather than `:track` or `:list`) and where the user doesn't match the provided ID which happens to be the Highways Agency twitter account for East of England travel news. The pattern match for A14 is done in the block because the tweet text isn't available in the headers.
 
 ## Sinks ##
 
@@ -196,7 +207,7 @@ Sinks publish to connections the output of their blocks. Here's an example of si
     end
 ```
 
-In this case the `:format` argument isn't really needed because a payload is specified by the block, but if the block was absent Qswarm would use it to know it needed to do a `payload.data.to_xml` before sending to the connection. You can have multiple sinks in a single source block that will all process the same payload.
+In this case the `:format` argument isn't really needed because a return payload is specified by the block, but if the block was absent Qswarm would use it to know it needed to do a `payload.data.to_xml` before sending to the connection. You can have multiple sinks in a single source block that will all process the same payload.
 
 ## Full Example ##
 
