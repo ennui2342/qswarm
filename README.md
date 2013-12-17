@@ -251,7 +251,7 @@ end
 
 More examples can be found in these blog posts:
 
-* Stream processing in Ruby
+* [Stream processing in Ruby](http://ecafe.org/blog/2013/12/13/stream-processing-in-ruby.html)
 
 ----
 
