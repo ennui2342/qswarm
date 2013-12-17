@@ -10,7 +10,7 @@ gem install qswarm
 
 ## Agent ##
 
-Use the `agent` command to wrap a set of DSL commands. Each agent will run in a separate thread.
+Use the `agent` command to wrap a set of DSL commands.
 
 ```ruby
 agent :bob do
