@@ -6,6 +6,8 @@ require 'ostruct'
 module Qswarm
   module Connections
     class Twitter < Qswarm::Connection
+      include Qswarm::DSL
+
       def initialize(agent, name, args, &block)
         TweetStream.configure do |config|
           config.consumer_key = args[:consumer_key]
@@ -119,6 +121,8 @@ module Qswarm
             end
           end
         end
+
+        dsl_call(&@on_connect) if @on_connect
       end
     end
   end

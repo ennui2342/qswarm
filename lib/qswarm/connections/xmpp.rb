@@ -20,11 +20,10 @@ module Qswarm
         @channels = []
         @connected = false
         @connection = nil
-        @on_connect = block_given? ? block : false
         @real_name = args[:real_name] || 'Bot'
 
         # Use the block for Blather bot DSL
-        super(agent, name, args)
+        super
       end
 
       def sink(args, payload)

@@ -44,9 +44,7 @@ module Qswarm
           end
         end
 
-        dsl_call(&block) if block_given?
-
-        super(agent, name, args)
+        super
       end
 
       def queue(name, routing_key = '', args = nil)
@@ -136,30 +134,22 @@ module Qswarm
       end
 
       def run
-#        Qswarm.logger.info "Binding #{@name.inspect} < #{@args[:bind]}"
-#        channel(@name, @args[:bind]).prefetch(@args[:prefetch]) unless @args[:prefetch].nil?
-
         if !@bind.nil?
           [*@bind].each do |bind|
             queue(@agent.name.to_s + '.' +  @name.to_s + @uuid ||= '', bind, @queue_args).subscribe(@subscribe_args) do |metadata, payload|
               emit metadata, payload
             end
           end
+
+          dsl_call(&@on_connect) if @on_connect
         end
       end
 
       def emit(metadata, payload)
         Qswarm.logger.info "[#{@agent.name.inspect}] :amqp connection #{@name.inspect} bound to #{metadata.routing_key}, received #{payload.inspect}"
 
-#        callback = proc do |agent|
-#          metadata.ack if ack?
-#        end
-
-#        EM.defer nil, callback do
-          @agent.emit(@name, :payload => OpenStruct.new(:raw => payload, :headers => (metadata.headers.nil? ? {} : Hash[metadata.headers.map{ |k, v| [k.to_sym, v] }]).merge(:routing_key => metadata.routing_key), :format => @format))
-          metadata.ack if ack?
-#          @agent
-#        end
+        @agent.emit(@name, :payload => OpenStruct.new(:raw => payload, :headers => (metadata.headers.nil? ? {} : Hash[metadata.headers.map{ |k, v| [k.to_sym, v] }]).merge(:routing_key => metadata.routing_key), :format => @format))
+        metadata.ack if ack?
       end
 
       def sink(args, payload)

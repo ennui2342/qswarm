@@ -6,6 +6,7 @@ module Qswarm
       @agent      = agent
       @name       = name
       @args       = args
+      @on_connect = block_given? ? block : false
 
       @format     = args[:format] || :raw
     end
