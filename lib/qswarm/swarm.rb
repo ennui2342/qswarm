@@ -21,7 +21,9 @@ module Qswarm
 
     def run
       EventMachine.run do
-        @agents.map { |a| a.run }
+        Thread.new {
+          @agents.map { |a| a.run }
+        }
       end
     end
   end
