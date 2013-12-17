@@ -1,6 +1,6 @@
 # Qswarm - stream processing for Ruby #
 
-Qswarm is a Ruby DSL for manipulating real-time streams of messages. It defines three basic concepts - [connections][], [sources][], and [sinks][]. Connections emit messages which sources can catch, sinking them to other connections. In this way you can construct data flows between systems and transform messages in-flight with Ruby.
+Qswarm is a Ruby DSL for manipulating real-time streams of messages. It defines three basic concepts - [connections](#connections), [sources](#sources), and [sinks](#sinks). Connections emit messages which sources can catch, sinking them to other connections. In this way you can construct data flows between systems and transform messages in-flight with Ruby.
 
 Install with:
 
@@ -23,7 +23,7 @@ Alternatively you could save each agent in a separate file and use a process man
 ## Connections ##
 
 
-Use `connect` to setup connections to services. Currently [AMQP][], [XMPP][], and [Twitter][] are supported. You can also pass an optional block which will be executed once the connection is set up.
+Use `connect` to setup connections to services. Currently [AMQP](#amqp), [XMPP](#xmpp), and [Twitter](#twitter) are supported. You can also pass an optional block which will be executed once the connection is set up.
 
 ### AMQP ###
 
@@ -42,11 +42,11 @@ Use `connect` to setup connections to services. Currently [AMQP][], [XMPP][], an
           :format          => :json
 ```
 
-This sets up an AMQP connection called `:messages` using the credentials in `:uri` (user:pass@host:port/vhost) and creates the exchange if it doesn't exist already (using `:exchange_args`). If a routing key is passed with `:bind` then a queue will be created with the dotted concatenation of the agent name and the connection name, e.g. bob.messages and bound to the exchange specified. At the moment you can't bind a queue to an exchange without specifying a routing key in `:bind`. You can pass configuration to the binding with `:bind_args`. Similarly `:queue_args` allow you to pass configuration options to the queue creation. Defaults for *_args are as in the example.
+This sets up an AMQP connection called `:messages` using the credentials in `:uri` (user:pass@host:port/vhost) and creates the exchange if it doesn't exist already (using `:exchange_args`). If a routing key is passed with `:bind` then a queue will be created with the dotted concatenation of the agent name and the connection name, e.g. bob.messages, and bound to the exchange specified (you can pass `:uniq => true` if you want a UUID appended to the queue name to make it unique for situations such as load balancing). At the moment you can't bind a queue to an exchange without specifying a routing key in `:bind`. You can pass configuration to the binding with `:bind_args`. Similarly `:queue_args` allow you to pass configuration options to the queue creation. Defaults for *_args are as in the example.
 
 The agent is automatically subscribed to the created queue and you can pass `:subscribe_args` to configure the subscription. If you specified `:ack` to be true then you can use `:prefetch` to specify how many messages you want to have from the queue at a time.
 
-The `:format` argument determines what Qswarm does with the payloads it receives and how it transforms messages to be sent, see section [Payload][].
+The `:format` argument determines what Qswarm does with the payloads it receives and how it transforms messages to be sent, see section [Payload](#payload).
 
 AMQP sets the following headers for `source` to use:
 
@@ -98,9 +98,9 @@ XMPP supports the following arguments to `sink`:
           }
 ```
 
-A Twitter connection uses the [Tweetstream][] and [Twitter][] libraries and requires oAuth credentials which you can get from [dev.twitter.com][]. There are three options that the Twitter API gives you - you can `:track` keywords in the global tweet stream using track, you can `:follow` the full stream of particular users (by twitter ID as Tweetstream doesn't let you use handles), or you can get updates from everyone included on a `:list` (this uses the REST API and the list is polled every minute).
+A Twitter connection uses the [Tweetstream][Tweetstream gem] and [Twitter][Twitter gem] gems and requires oAuth credentials which you can get from [dev.twitter.com][Twitter auth]. There are three options that the Twitter API gives you - you can `:track` keywords in the global tweet stream using track, you can `:follow` the full stream of particular users (by twitter ID as Tweetstream doesn't let you use handles), or you can get updates from everyone included on a `:list` (this uses the REST API and the list is polled every minute).
 
-You specify groups (:colours/:feelings/:tech/:flibbertigibbets above) to allow for easy filtering later on with [guards][Filters and Guards]. Twitter messages are always JSON so there is no `:format` option for connect.
+You specify groups (:colours/:feelings/:tech/:flibbertigibbets above) to allow for easy filtering later on with [guards](#filters-and-guards). Twitter messages are always JSON so there is no `:format` option for connect.
 
 Twitter would set the following example headers for `source` to use depending on the `:type` that generated the message.
 
@@ -139,7 +139,7 @@ before :tweetstream do
   end
 ```
 
-Guards (shamelessly copied from [Blather][]) allow you to put conditional execution on `before`, `after`, and `source` blocks by filtering on data passed in `payload.headers`. Please note that headers are always Strings not Symbols.
+Guards (shamelessly copied from [Blather][]) allow you to put conditional execution on `before`, `after`, and `source` blocks by filtering on data passed in `payload.headers`. Please note that header values are always Strings not Symbols.
 
 The types of guards are:
 
@@ -180,7 +180,7 @@ Sources listen to messages from connections and process them using their blocks 
   end
 ```
 
-The above will listen to messages from the `:tweetstream` connection. The [guards][Filters and Guards] will eliminate any tweet which doesn't come from a `:follow` (rather than `:track` or `:list`) and where the user doesn't match the provided ID which happens to be the Highways Agency twitter account for East of England travel news. The pattern match for A14 news is done in the block because the tweet text isn't available in the headers.
+The above will listen to messages from the `:tweetstream` connection. The [guards](#filters-and-guards) will eliminate any tweet which doesn't come from a `:follow` (rather than `:track` or `:list`) and where the user doesn't match the provided ID which happens to be the Highways Agency twitter account for East of England travel news. The pattern match for A14 news is done in the block because the tweet text isn't available in the headers.
 
 ## Sinks ##
 
@@ -248,3 +248,6 @@ More examples can be found in these blog posts:
 [god]: http://godrb.com
 [bluepill]: https://github.com/bluepill-rb/bluepill
 [Blather]: https://github.com/adhearsion/blather
+[Tweetstream gem]: https://github.com/tweetstream/tweetstream
+[Twitter gem]: https://github.com/sferik/twitter
+[Twitter auth]: https://dev.twitter.com/docs/auth/tokens-devtwittercom
