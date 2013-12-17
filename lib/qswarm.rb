@@ -3,7 +3,7 @@
   qswarm/dsl
   qswarm/swarm
   qswarm/agent
-  qswarm/client
+  qswarm/connection
   logger
 ].each { |r| require r }
 
