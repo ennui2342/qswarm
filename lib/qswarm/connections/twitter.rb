@@ -4,8 +4,8 @@ require 'json'
 require 'ostruct'
 
 module Qswarm
-  module Clients
-    class Twitter < Qswarm::Client
+  module Connections
+    class Twitter < Qswarm::Connection
       def initialize(agent, name, args, &block)
         TweetStream.configure do |config|
           config.consumer_key = args[:consumer_key]

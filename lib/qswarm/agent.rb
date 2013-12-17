@@ -39,11 +39,11 @@ module Qswarm
 
       if !args.nil? && !args[:type].nil?
         Qswarm.logger.info "[#{@name.inspect}] Registering #{args[:type].inspect} connection #{name.inspect}"
-        require "qswarm/clients/#{args[:type].downcase}"
-        @clients[name] = eval("Qswarm::Clients::#{args[:type].capitalize}").new(self, name, args, &block)
+        require "qswarm/connections/#{args[:type].downcase}"
+        @clients[name] = eval("Qswarm::Connections::#{args[:type].capitalize}").new(self, name, args, &block)
       else
         Qswarm.logger.info "[#{@name.inspect}] Registering default connection #{name.inspect}"
-        @clients[name] = Qswarm::Client.new(self, name, args, &block)
+        @clients[name] = Qswarm::Connection.new(self, name, args, &block)
       end
     end
 

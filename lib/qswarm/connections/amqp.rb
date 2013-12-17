@@ -5,8 +5,8 @@ require 'json'
 require 'ostruct'
 
 module Qswarm
-  module Clients
-    class Amqp < Qswarm::Client
+  module Connections
+    class Amqp < Qswarm::Connection
       include Qswarm::DSL
 
 #    dsl_accessor :name, :host, :port, :user, :pass, :vhost, :exchange_type, :exchange_name, :durable

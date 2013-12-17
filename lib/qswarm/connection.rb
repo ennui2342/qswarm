@@ -1,5 +1,5 @@
 module Qswarm
-  class Client
+  class Connection
     def initialize(agent, name, args, &block)
       @agent      = agent
       @name       = name

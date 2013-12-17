@@ -2,7 +2,7 @@ require 'blather/client/dsl'
 require 'json'
 
 module Qswarm
-  module Clients
+  module Connections
     class QBlather
       include Blather::DSL
 
@@ -13,7 +13,7 @@ module Qswarm
       end
     end
 
-    class Xmpp < Qswarm::Client
+    class Xmpp < Qswarm::Connection
       include Qswarm::DSL
 
       def initialize(agent, name, args, &block)
