@@ -30,4 +30,5 @@ Gem::Specification.new do |s|
   s.add_dependency 'nokogiri'
   s.add_dependency 'tweetstream'
   s.add_dependency 'twitter'
+  s.add_dependency 'trollop'
 end

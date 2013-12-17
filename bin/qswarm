@@ -3,10 +3,17 @@
 $stdout.sync = true
 
 require 'qswarm'
+require 'trollop'
 
-usage = "#{$0} <configuration file>"
-abort usage unless config = ARGV.shift
+opts = Trollop::options do
+  opt :debug, "Turn log level up to DEBUG"
+end
+
+abort "Usage: #{$0} <configuration file>" unless config = ARGV.shift
+
+if opts[:debug]
+  Qswarm.logger.level = Logger::DEBUG
+end
 
 swarm = Qswarm::Swarm.new(config)
-Qswarm.logger.level = Logger::DEBUG
 swarm.run
