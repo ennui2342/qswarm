@@ -157,7 +157,7 @@ module Qswarm
 #        end
 
 #        EM.defer nil, callback do
-          @agent.emit(@name, :payload => OpenStruct.new(:raw => payload, :headers => { :routing_key => metadata.routing_key }.merge(metadata.headers.nil? ? {} : Hash[metadata.headers.map{ |k, v| [k.to_sym, v] }]), :format => @format))
+          @agent.emit(@name, :payload => OpenStruct.new(:raw => payload, :headers => (metadata.headers.nil? ? {} : Hash[metadata.headers.map{ |k, v| [k.to_sym, v] }]).merge(:routing_key => metadata.routing_key), :format => @format))
           metadata.ack if ack?
 #          @agent
 #        end
@@ -167,7 +167,7 @@ module Qswarm
         [*args[:routing_key]].each do |routing_key|
           Qswarm.logger.info "[#{@agent.name.inspect} #{@name.inspect}] Sinking #{payload.raw.inspect} to AMQP routing_key #{routing_key.inspect}"
           if args[:headers] || payload.headers
-            exchange.publish payload.raw, :routing_key => routing_key, :headers => (args[:headers] ? args[:headers] : payload.headers)
+            exchange.publish payload.raw, :routing_key => routing_key, :headers => (args[:headers] ? args[:headers] : payload.headers).merge(:routing_key => routing_key)
           else
             exchange.publish payload.raw, :routing_key => routing_key
           end
