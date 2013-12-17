@@ -28,6 +28,7 @@ module Qswarm
         @channels      = {}
         @exchange      = nil
         @instances     = nil
+        @format        = args[:format] || :raw
 
         @queue_args     = { :auto_delete => true, :durable => true, :exclusive => true }.merge! args[:queue_args] || {}
         @subscribe_args = { :exclusive => false, :ack => false }.merge! args[:subscribe_args] || {}
@@ -36,6 +37,7 @@ module Qswarm
         @exchange_name  = args[:exchange_name] || ''
         @exchange_args  = { :durable => true }.merge! args[:exchange_args] || {}
         @uuid           = UUID.generate if args[:uniq]
+        @bind           = args[:bind]
 
         Signal.trap("INT") do
           @@connection["#{@host}:#{@port}/#{@vhost}"].close do
@@ -123,7 +125,7 @@ module Qswarm
       end
 
       def ack?
-        @args[:subscribe_args] ? @args[:subscribe_args][:ack] : false
+        @subscribe_args[:ack]
       end
 
       def to_s
@@ -138,8 +140,8 @@ module Qswarm
 #        Qswarm.logger.info "Binding #{@name.inspect} < #{@args[:bind]}"
 #        channel(@name, @args[:bind]).prefetch(@args[:prefetch]) unless @args[:prefetch].nil?
 
-        if !@args[:bind].nil?
-          [*@args[:bind]].each do |bind|
+        if !@bind.nil?
+          [*@bind].each do |bind|
             queue(@agent.name.to_s + '.' +  @name.to_s + @uuid ||= '', bind, @queue_args).subscribe(@subscribe_args) do |metadata, payload|
               emit metadata, payload
             end
@@ -155,7 +157,7 @@ module Qswarm
 #        end
 
 #        EM.defer nil, callback do
-          @agent.emit(@name, :payload => OpenStruct.new(:raw => payload, :routing_key => metadata.routing_key, :headers => metadata.headers.nil? ? nil : Hash[metadata.headers.map{ |k, v| [k.to_sym, v] }], :format => @args[:format]))
+          @agent.emit(@name, :payload => OpenStruct.new(:raw => payload, :headers => { :routing_key => metadata.routing_key }.merge(metadata.headers.nil? ? {} : Hash[metadata.headers.map{ |k, v| [k.to_sym, v] }]), :format => @format))
           metadata.ack if ack?
 #          @agent
 #        end
