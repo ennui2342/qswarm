@@ -1,19 +1,21 @@
 module Qswarm
   class Connection
+    attr_reader :format
+
     def initialize(agent, name, args, &block)
       @agent      = agent
       @name       = name
       @args       = args
+
+      @format     = args[:format] || :raw
     end
 
     def emit(payload)
+      @agent.emit(@name, :payload => OpenStruct.new(:raw => payload, :format => @format))
     end
 
     def sink(args, payload)
-    end
-
-    def format
-      @args[:format]
+      Qswarm.logger.info ">>> #{payload.raw}"
     end
 
     def run

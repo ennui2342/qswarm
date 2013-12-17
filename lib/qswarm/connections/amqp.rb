@@ -28,7 +28,6 @@ module Qswarm
         @channels      = {}
         @exchange      = nil
         @instances     = nil
-        @format        = args[:format] || :raw
 
         @queue_args     = { :auto_delete => true, :durable => true, :exclusive => true }.merge! args[:queue_args] || {}
         @subscribe_args = { :exclusive => false, :ack => false }.merge! args[:subscribe_args] || {}
