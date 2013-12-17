@@ -21,6 +21,7 @@ module Qswarm
         @connected = false
         @connection = nil
         @on_connect = block_given? ? block : false
+        @real_name = args[:real_name] || 'Bot'
 
         # Use the block for Blather bot DSL
         super(agent, name, args)
@@ -51,8 +52,7 @@ module Qswarm
         [*channel].each do |c|
           next if @channels.include? c
           Qswarm.logger.debug "Joining XMPP channel #{c}"
-          # Need to do something about the name being hard coded here
-          @connection.join c, 'Bob Bot'
+          @connection.join c, @real_name
           @channels << c
         end
       end
