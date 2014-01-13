@@ -14,6 +14,7 @@ module Qswarm
 
       def initialize(agent, name, args, &block)
         # Set some defaults
+        @protocol      = 'amqp'
         @host          = 'localhost'
         @port          = 5672
         @user          = 'guest'
@@ -118,6 +119,12 @@ module Qswarm
       end
 
       def decode_uri(uri)
+        if uri.match(/(amqp.?):\/\/(.*)/)
+          @protocol = $1
+          uri = $2
+        else
+          @protocol = 'amqp'
+        end
         @user, @pass, @host, @port, @vhost = uri.match(/([^:]+):([^@]+)@([^:]+):([^\/]+)\/(.*)/).captures
       end
 
@@ -126,7 +133,7 @@ module Qswarm
       end
 
       def to_s
-        "amqp://#{@user}:#{@pass}@#{@host}:#{@port}/#{CGI.escape('/' + @vhost)}"
+        "#{@protocol}://#{@user}:#{CGI.escape(@pass)}@#{@host}:#{@port}/#{CGI.escape('/' + @vhost)}"
       end
 
       def status
